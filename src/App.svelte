@@ -225,9 +225,9 @@
         reader.onload = function (e) {
             const xmlContent = e.target.result;
             jsonObj = parser.parse(xmlContent);
-            let str = jsonObj.resources["string"];
-            let stra = jsonObj.resources["string-array"];
-            let plur = jsonObj.resources["plurals"];
+            str = jsonObj.resources["string"];
+            stra = jsonObj.resources["string-array"];
+            plur = jsonObj.resources["plurals"];
             maping();
             strT = loadTable(strL, "stringT", strT, TableType.String);
             plurT = loadTable(plurL, "pluralT", plurT, TableType.Plural);
