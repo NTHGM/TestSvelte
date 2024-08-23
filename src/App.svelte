@@ -3,55 +3,12 @@
     import { XMLBuilder } from "fast-xml-parser";
     import Handsontable from "handsontable";
     import "handsontable/dist/handsontable.full.min.css";
-    //parser-builder
-    //plural1
-    // class PluralItem {
-    //     quantity: String;
-    //     text: String;
-    // }
-    // class Plural {
-    //     name: String;
-    //     untranslatable: String;
-    //     item: Array<PluralItem> = new Array();
-    // }
-    //plural2
-    class Plural2 {
-        name: String;
-        untranslatable: String;
-        quantity: String;
-        text: String;
-    }
 
-    enum TableType {
-        String,
-        StringArray,
-        Plural,
-    }
-
-    //string array 1
-    // class StringArray {
-    //     name: String;
-    //     untranslatable: String;
-    //     item: Array<String> = new Array<String>();
-    // }
-    //string array 2
-    class StringArray2 {
-        name: String;
-        untranslatable: String;
-        text: String;
-    }
-
-    let fileURL: Array<String> = new Array();
-    let fileList: Array<File> = new Array();
-
-    let jsonObj;
-
-    let str;
+    let k = new Map<String, Array<String>>([]);
+    let str = new Array();
     let strT;
-    let strL: Array<String> = new Array();
     let strSettings = {
-        colHeaders: ["Key", "Untranslatable", "Value"],
-        dataSchema: { name: null, untranslatable: null, text: null },
+        colHeaders: ["Key", "Default"],
         rowHeaders: true,
         height: "auto",
         autoWrapRow: true,
@@ -60,57 +17,15 @@
         minSpareRows: 1,
     };
 
-    let stra;
-    let straT;
-    let straL: Array<StringArray2> = new Array<StringArray2>();
-    let straSettings = {
-        colHeaders: ["Key", "Untranslatable", "Value"],
-        dataSchema: { name: null, untranslatable: null, text: null },
-        rowHeaders: true,
-        height: "auto",
-        autoWrapRow: true,
-        autoWrapCol: true,
-        with: "auto",
-        minSpareRows: 1,
-    };
+    let first = true;
 
-    let plur;
-    let plurT;
-    let plurL: Array<Plural2> = new Array<Plural2>();
-    let plurSettings = {
-        colHeaders: ["Key", "Untranslatable", "Quantity", "Value"],
-        dataSchema: {
-            name: null,
-            untranslatable: null,
-            quantity: null,
-            text: null,
-        },
-        rowHeaders: true,
-        height: "auto",
-        with: "auto",
-        minSpareRows: 1,
-        autoWrapRow: true,
-        autoWrapCol: true,
-    };
-
-    function loadTable(datas, id, table, type) {
+    function loadTable(datas, id, table) {
         if (table) {
             loadData(table, datas);
             return table;
         }
         let container = document.getElementById(id);
-        let setting;
-        switch (type) {
-            case TableType.String:
-                setting = strSettings;
-                break;
-            case TableType.Plural:
-                setting = plurSettings;
-                break;
-            case TableType.StringArray:
-                setting = straSettings;
-                break;
-        }
+        let setting = strSettings;
 
         let hot = new Handsontable(container, {
             data: datas,
@@ -118,22 +33,6 @@
             licenseKey: "non-commercial-and-evaluation", // for non-commercial use only
         });
         //neu map lai thi can tham chieu den jsonObj.resources
-        hot.addHook("afterChange", (changes) => {
-            changes?.forEach(([row, prop, oldValue, newValue]) => {
-                switch (datas) {
-                    case strL:
-                        const item = str[row];
-                        item["@_" + prop] = newValue;
-                        break;
-                    case straL:
-                        //add
-                        break;
-                    case plurL:
-                        //add
-                        break;
-                }
-            });
-        });
         return hot;
     }
 
@@ -141,71 +40,10 @@
         hot.loadData(data);
     }
 
-    function convertToArray(arr): Array<any> {
-        let x = [];
-        if (!arr) {
-            return x;
-        }
-
-        if (!arr.length) {
-            x = [arr, ...x];
-        } else {
-            return arr;
-        }
-        return x;
-    }
-
-    function Url(file) {
-        let x = URL.createObjectURL(file);
-        fileURL = [...fileURL, x];
-    }
-    //de data phu hop voi bang
-    function maping() {
-        //str
-        str = convertToArray(str);
-        strL.splice(0, strL.length);
-        strL = str?.map((item) => ({
-            name: item["@_name"],
-            untranslatable: item["@_untranslatable"] || "",
-            text: item["#text"],
-        }));
-
-        //stra
-        stra = convertToArray(stra);
-        straL.splice(0, straL.length);
-        if (stra)
-            stra.forEach((e) => {
-                e["item"].forEach((element) => {
-                    let tmp = new StringArray2();
-                    tmp.name = e["@_name"];
-                    tmp.untranslatable = e["@_untranslatable"] || "";
-                    tmp.text = element;
-                    straL = [...straL, tmp];
-                });
-            });
-
-        //plural
-        plur = convertToArray(plur);
-        plurL.splice(0, straL.length);
-        if (plur)
-            plur.forEach((e) => {
-                e["item"].forEach((element) => {
-                    let tmp = new Plural2();
-                    tmp.name = e["@_name"];
-                    tmp.untranslatable = e["@_untranslatable"] || "";
-                    tmp.quantity = element["@_quantity"];
-                    tmp.text = element["#text"];
-                    plurL = [...plurL, tmp];
-                });
-            });
-    }
-
     function OnUploadFile(event) {
         const file = event.target.files[0];
         if (file) {
-            fileList = [...fileList, file];
             XMLtoJSON(file);
-            Url(file);
         }
         event.target.value = null;
     }
@@ -224,28 +62,73 @@
         const reader = new FileReader();
         reader.onload = function (e) {
             const xmlContent = e.target.result;
-            jsonObj = parser.parse(xmlContent);
-            str = jsonObj.resources["string"];
-            stra = jsonObj.resources["string-array"];
-            plur = jsonObj.resources["plurals"];
-            maping();
-            strT = loadTable(strL, "stringT", strT, TableType.String);
-            plurT = loadTable(plurL, "pluralT", plurT, TableType.Plural);
-            straT = loadTable(
-                straL,
-                "stringarrayT",
-                straT,
-                TableType.StringArray,
-            );
-            console.log(jsonObj);
+            let jsonObj = parser.parse(xmlContent);
+            SetupVar(jsonObj);
         };
         reader.readAsText(file);
     }
 
+    function SetupVar(jsonObj) {
+        let strL = new Array();
+        if (jsonObj.resources["string"].length < 2) {
+            strL = [...strL, jsonObj.resources["string"]];
+            strL = strL.map((item) => ({
+                name: item["@_name"],
+                text: item["#text"],
+            }));
+        } else
+            strL = jsonObj.resources["string"].map((item) => ({
+                name: item["@_name"],
+                text: item["#text"],
+            }));
+
+        if (first) {
+            strL.forEach((e) => {
+                k.set(e.name, [e.text]);
+            });
+            first = false;
+        } else {
+            let length = k.values().next().value.length;
+            let h = new Map();
+            for (let x of k.keys()) {
+                h.set(x, null);
+            }
+            strL.forEach((e) => {
+                h.delete(e.name);
+                if (k.has(e.name)) {
+                    k.get(e.name).push(e.text);
+                } else {
+                    let a = Array();
+                    for (let i = 0; i < length; i++) {
+                        a.push(" ");
+                    }
+                    a = [...a, e.text];
+                    k.set(e.name, a);
+                }
+            });
+            for (let i of h.keys()) {
+                let x = k.get(i);
+                x.push(" ");
+            }
+            console.log(k);
+        }
+        str.splice(0, str.length);
+        for (let i of k.keys()) {
+            let x = k.get(i);
+            let obj = {};
+            obj["0"] = i;
+            for (let i = 0; i < x.length; i++) {
+                obj["" + (i + 1)] = x[i];
+            }
+            str = [...str, obj];
+        }
+        console.log(str);
+        strT = loadTable(str, "stringT", strT);
+    }
     const builder = new XMLBuilder(options);
     let ori = null;
     function JSONtoXML() {
-        ori = builder.build(jsonObj);
+        //ori = builder.build(jsonObj);
     }
 
     function openTab(evt, type) {
